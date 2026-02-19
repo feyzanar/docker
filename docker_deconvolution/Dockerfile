@@ -1,4 +1,6 @@
-# Base Ubuntu 22.04
+# -----------------------
+# Base Image
+# -----------------------
 FROM ubuntu:22.04
 
 # -----------------------
@@ -9,8 +11,9 @@ ARG LDAP_UID
 ARG LDAP_GROUPNAME
 ARG LDAP_GID
 
-RUN groupadd ${LDAP_GROUPNAME} --gid ${LDAP_GID}
-RUN useradd -m -s /bin/bash -g ${LDAP_GROUPNAME} -u ${LDAP_UID} ${LDAP_USERNAME}
+# Create group and user matching the cluster LDAP
+RUN groupadd ${LDAP_GROUPNAME} --gid ${LDAP_GID} \
+    && useradd -m -s /bin/bash -g ${LDAP_GROUPNAME} -u ${LDAP_UID} ${LDAP_USERNAME}
 
 # -----------------------
 # System dependencies
@@ -28,27 +31,28 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------
-# Copy your code
+# Setup working directories for RCP scratch
 # -----------------------
+RUN mkdir -p /scratch/input /scratch/output \
+    && chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /scratch
+
+WORKDIR /scratch
+
+# -----------------------
+# Copy code into home directory
+# -----------------------
+USER ${LDAP_USERNAME}
 RUN mkdir -p /home/${LDAP_USERNAME}/public
 COPY ./ /home/${LDAP_USERNAME}/public
-
-# Set ownership
-RUN chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /home/${LDAP_USERNAME}
+RUN chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /home/${LDAP_USERNAME}/public
 
 # -----------------------
-# Switch to user
+# Optional: clone latest from GitHub
 # -----------------------
-WORKDIR /home/${LDAP_USERNAME}
-USER ${LDAP_USERNAME}
+# RUN git clone https://github.com/feyzanar/public.git /home/${LDAP_USERNAME}/public
 
 # -----------------------
-# Clone your GitHub repo (optional, if you want latest)
-# -----------------------
-RUN git clone https://github.com/feyzanar/public.git
-
-# -----------------------
-# Install Python packages
+# Python environment
 # -----------------------
 RUN pip install --upgrade pip
 RUN pip install \
@@ -61,6 +65,6 @@ RUN pip install \
     pyclesperanto-prototype
 
 # -----------------------
-# Entrypoint
+# Default entrypoint: run 3D deconvolution
 # -----------------------
-ENTRYPOINT ["python3", "public/3d_deconvolution.py"]
+ENTRYPOINT ["python3", "/home/fnarslan/public/3d_deconvolution.py", "/scratch/input", "/scratch/output"]
