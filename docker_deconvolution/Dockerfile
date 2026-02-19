@@ -39,17 +39,11 @@ RUN mkdir -p /scratch/input /scratch/output \
 WORKDIR /scratch
 
 # -----------------------
-# Copy code into home directory
+# Copy only the deconvolution script
 # -----------------------
 USER ${LDAP_USERNAME}
-RUN mkdir -p /home/${LDAP_USERNAME}/public
-COPY ./ /home/${LDAP_USERNAME}/public
-RUN chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /home/${LDAP_USERNAME}/public
-
-# -----------------------
-# Optional: clone latest from GitHub
-# -----------------------
-# RUN git clone https://github.com/feyzanar/public.git /home/${LDAP_USERNAME}/public
+COPY ./3d_deconvolution.py /home/${LDAP_USERNAME}/3d_deconvolution.py
+RUN chown ${LDAP_USERNAME}:${LDAP_GROUPNAME} /home/${LDAP_USERNAME}/3d_deconvolution.py
 
 # -----------------------
 # Python environment
@@ -67,4 +61,4 @@ RUN pip install \
 # -----------------------
 # Default entrypoint: run 3D deconvolution
 # -----------------------
-ENTRYPOINT ["python3", "/home/fnarslan/public/3d_deconvolution.py", "/scratch/input", "/scratch/output"]
+ENTRYPOINT ["python3", "/home/fnarslan/3d_deconvolution.py", "/scratch/input", "/scratch/output"]
