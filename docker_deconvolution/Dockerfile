@@ -11,7 +11,6 @@ ARG LDAP_UID
 ARG LDAP_GROUPNAME
 ARG LDAP_GID
 
-# Create group and user matching the cluster LDAP
 RUN groupadd ${LDAP_GROUPNAME} --gid ${LDAP_GID} \
     && useradd -m -s /bin/bash -g ${LDAP_GROUPNAME} -u ${LDAP_UID} ${LDAP_USERNAME}
 
@@ -39,11 +38,14 @@ RUN mkdir -p /scratch/input /scratch/output \
 WORKDIR /scratch
 
 # -----------------------
-# Copy only the deconvolution script
+# Switch to user
 # -----------------------
 USER ${LDAP_USERNAME}
-COPY ./3d_deconvolution.py /home/${LDAP_USERNAME}/3d_deconvolution.py
-RUN chown ${LDAP_USERNAME}:${LDAP_GROUPNAME} /home/${LDAP_USERNAME}/3d_deconvolution.py
+
+# -----------------------
+# Clone your repo (at build time)
+# -----------------------
+RUN git clone https://github.com/feyzanar/docker.git /home/${LDAP_USERNAME}/deconvolution_repo
 
 # -----------------------
 # Python environment
@@ -59,6 +61,6 @@ RUN pip install \
     pyclesperanto-prototype
 
 # -----------------------
-# Default entrypoint: run 3D deconvolution
+# Default entrypoint: run 3D deconvolution from repo
 # -----------------------
-ENTRYPOINT ["python3", "/home/fnarslan/3d_deconvolution.py", "/scratch/input", "/scratch/output"]
+ENTRYPOINT ["python3", "/home/fnarslan/deconvolution_repo/docker_deconvolution/3d_deconvolution.py", "/scratch/input", "/scratch/output"]
