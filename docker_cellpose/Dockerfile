@@ -4,59 +4,58 @@
 FROM --platform=linux/amd64 ubuntu:22.04
 
 # -----------------------
-# RCP CaaS Storage User Mapping
+# RCP CaaS User Mapping
 # -----------------------
 ARG LDAP_USERNAME
 ARG LDAP_UID
 ARG LDAP_GROUPNAME
 ARG LDAP_GID
+USER root
+RUN if [ -n "$LDAP_USERNAME" ] && [ -n "$LDAP_UID" ] && [ -n "$LDAP_GROUPNAME" ] && [ -n "$LDAP_GID" ]; then \
+        groupadd -f -g $LDAP_GID $LDAP_GROUPNAME && \
+        id -u $LDAP_USERNAME || useradd -m -s /bin/bash -g $LDAP_GROUPNAME -u $LDAP_UID $LDAP_USERNAME; \
+    fi
 
-RUN groupadd ${LDAP_GROUPNAME} --gid ${LDAP_GID} \
- && useradd -m -s /bin/bash -g ${LDAP_GROUPNAME} -u ${LDAP_UID} ${LDAP_USERNAME}
+# -----------------------
+# System dependencies
+# -----------------------
+RUN apt-get update && apt-get install -y \
+        python3 \
+        python3-pip \
+        python3-dev \
+        git \
+        wget \
+        ocl-icd-opencl-dev \
+        libopencl1 \
+        clinfo \
+    && rm -rf /var/lib/apt/lists/*
+
+# -----------------------
+# Clone repo into /scratch (writable on RCP)
+# -----------------------
+RUN mkdir -p /scratch/deconvolution_repo
+WORKDIR /scratch
+RUN git clone https://github.com/feyzanar/docker.git deconvolution_repo
+WORKDIR /scratch/deconvolution_repo/docker_deconvolution
+
+# -----------------------
+# Python packages
+# -----------------------
+RUN pip install --upgrade pip
+RUN pip install \
+        numpy \
+        tifffile \
+        tqdm \
+        dask \
+        pyclesperanto-prototype \
+        clij2-fft
 
 # -----------------------
 # Switch to user
 # -----------------------
 USER ${LDAP_USERNAME}
-WORKDIR /home/${LDAP_USERNAME}
 
 # -----------------------
-# Clone your fixed GitHub repo
+# Default entrypoint
 # -----------------------
-RUN git clone https://github.com/feyzanar/docker.git deconvolution_repo
-
-# -----------------------
-# System dependencies
-# -----------------------
-USER root
-RUN apt update && apt install -y \
-    python3-pip \
-    git \
-    wget \
-    ocl-icd-opencl-dev \
-    libopencl1 \
-    clinfo \
-    && rm -rf /var/lib/apt/lists/*
-
-# -----------------------
-# Python dependencies
-# -----------------------
-USER ${LDAP_USERNAME}
-RUN pip install --upgrade pip
-RUN pip install \
-    numpy \
-    tifffile \
-    tqdm \
-    dask \
-    pyclesperanto-prototype \
-    clij2-fft
-
-# -----------------------
-# Set working directory to cloned repo
-# -----------------------
-WORKDIR /home/${LDAP_USERNAME}/deconvolution_repo/docker_deconvolution
-
-# -----------------------
-# Optional ENTRYPOINT (runs your fixed script by default)
-# -----------------------
-ENTRYPOINT ["python3", "3d_deconvolution.py"]
+ENTRYPOINT ["python3", "/scratch/deconvolution_repo/docker_deconvolution/3d_deconvolution.py"]
