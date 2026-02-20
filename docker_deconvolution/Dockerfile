@@ -10,7 +10,9 @@ ARG LDAP_USERNAME
 ARG LDAP_UID
 ARG LDAP_GROUPNAME
 ARG LDAP_GID
+
 USER root
+
 RUN if [ -n "$LDAP_USERNAME" ] && [ -n "$LDAP_UID" ] && [ -n "$LDAP_GROUPNAME" ] && [ -n "$LDAP_GID" ]; then \
         groupadd -f -g $LDAP_GID $LDAP_GROUPNAME && \
         id -u $LDAP_USERNAME || useradd -m -s /bin/bash -g $LDAP_GROUPNAME -u $LDAP_UID $LDAP_USERNAME; \
@@ -32,12 +34,15 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------
-# Clone repo into /scratch (writable on RCP)
+# Create home directory
 # -----------------------
 RUN mkdir -p /home/${LDAP_USERNAME}
-COPY ./ /home/${LDAP_USERNAME}
-RUN chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /home/${LDAP_USERNAME}
 WORKDIR /home/${LDAP_USERNAME}
+
+# -----------------------
+# Download only the required script
+# -----------------------
+RUN wget https://raw.githubusercontent.com/feyzanar/docker/main/docker_deconvolution/3d_deconvolution.py
 
 # -----------------------
 # Python packages
@@ -52,6 +57,11 @@ RUN pip install \
         clij2-fft
 
 # -----------------------
+# Fix ownership at the end
+# -----------------------
+RUN chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /home/${LDAP_USERNAME}
+
+# -----------------------
 # Switch to user
 # -----------------------
 USER ${LDAP_USERNAME}
@@ -59,4 +69,4 @@ USER ${LDAP_USERNAME}
 # -----------------------
 # Default entrypoint
 # -----------------------
-# ENTRYPOINT ["python3", "/scratch/deconvolution_repo/docker_deconvolution/3d_deconvolution.py"]
+# ENTRYPOINT ["python3", "/home/fnarslan/3d_deconvolution.py"]
