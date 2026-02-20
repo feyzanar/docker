@@ -1,7 +1,7 @@
 # -----------------------
 # Base Image
 # -----------------------
-FROM ubuntu:22.04
+FROM --platform=linux/amd64 ubuntu:22.04
 
 # -----------------------
 # RCP CaaS User Mapping
@@ -11,6 +11,7 @@ ARG LDAP_UID
 ARG LDAP_GROUPNAME
 ARG LDAP_GID
 
+USER root
 RUN groupadd ${LDAP_GROUPNAME} --gid ${LDAP_GID} \
     && useradd -m -s /bin/bash -g ${LDAP_GROUPNAME} -u ${LDAP_UID} ${LDAP_USERNAME}
 
@@ -21,46 +22,38 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     python3-dev \
-    openjdk-11-jre \
-    libopencl1 \
-    ocl-icd-opencl-dev \
-    clinfo \
     git \
     wget \
+    ocl-icd-opencl-dev \
+    libopencl1 \
+    clinfo \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------
-# Setup working directories for RCP scratch
-# -----------------------
-RUN mkdir -p /scratch/input /scratch/output \
-    && chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /scratch
-
-WORKDIR /scratch
-
-# -----------------------
-# Switch to user
+# Clone your GitHub repo
 # -----------------------
 USER ${LDAP_USERNAME}
+WORKDIR /home/${LDAP_USERNAME}
+RUN git clone https://github.com/feyzanar/docker.git deconvolution_repo
 
 # -----------------------
-# Clone your repo (at build time)
-# -----------------------
-RUN git clone https://github.com/feyzanar/docker.git /home/${LDAP_USERNAME}/deconvolution_repo
-
-# -----------------------
-# Python environment
+# Python dependencies
 # -----------------------
 RUN pip install --upgrade pip
 RUN pip install \
     numpy \
-    scipy \
     tifffile \
     tqdm \
     dask \
-    clij2-fft \
-    pyclesperanto-prototype
+    pyclesperanto-prototype \
+    clij2-fft
 
 # -----------------------
-# Default entrypoint: run 3D deconvolution from repo
+# Set working directory to repo
 # -----------------------
-ENTRYPOINT ["python3", "/home/fnarslan/deconvolution_repo/docker_deconvolution/3d_deconvolution.py", "/scratch/input", "/scratch/output"]
+WORKDIR /home/${LDAP_USERNAME}/deconvolution_repo/docker_deconvolution
+
+# -----------------------
+# Default entrypoint
+# -----------------------
+ENTRYPOINT ["python3", "3d_deconvolution.py"]
