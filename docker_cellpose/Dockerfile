@@ -1,58 +1,62 @@
-#####################################
-# RCP CaaS requirement (Image)
-#####################################
-# The best practice is to use an image
-# with GPU support pre-built by Nvidia.
-# https://catalog.ngc.nvidia.com/orgs/nvidia/containers/
+# -----------------------
+# Base Image
+# -----------------------
+FROM --platform=linux/amd64 ubuntu:22.04
 
-# For example, if you want to use an image with pytorch already installed
-# FROM --platform=linux/amd64 nvcr.io/nvidia/pytorch:23.11-py3
-
-# IMPORTANT
-# The --platform parameter is mandatory on ARM MacOS
-# to force the build of the container using amd64 (x64).
-# Without this parameter, the container will not work on the CaaS cluster.
-
-# TUTORIAL ONLY
-# In this example we'll use a smaller image to speed up the build process.
-# Basic image based on ubuntu 22.04
-FROM docker.io/library/ubuntu:22.04
-#FROM --platform=linux/amd64 nvcr.io/nvidia/pytorch:23.12-py3
-
-
-
-#####################################
-# RCP CaaS requirement (Storage)
-#####################################
-# Create your user inside the container.
-# This block is needed to correctly map
-# your EPFL user id inside the container.
-# Without this mapping, you are not able
-# to access files from the external storage.
+# -----------------------
+# RCP CaaS Storage User Mapping
+# -----------------------
 ARG LDAP_USERNAME
 ARG LDAP_UID
 ARG LDAP_GROUPNAME
 ARG LDAP_GID
-RUN groupadd ${LDAP_GROUPNAME} --gid ${LDAP_GID}
-RUN useradd -m -s /bin/bash -g ${LDAP_GROUPNAME} -u ${LDAP_UID} ${LDAP_USERNAME}
-#####################################
 
-# Copy your code inside the container
-RUN mkdir -p /home/${LDAP_USERNAME}
-COPY ./ /home/${LDAP_USERNAME}
+RUN groupadd ${LDAP_GROUPNAME} --gid ${LDAP_GID} \
+ && useradd -m -s /bin/bash -g ${LDAP_GROUPNAME} -u ${LDAP_UID} ${LDAP_USERNAME}
 
-# Set your user as owner of the new copied files
-RUN chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /home/${LDAP_USERNAME}
-
-# Install required packages
-RUN apt update
-RUN apt install python3-pip -y
-RUN apt-get install -y git
-
-# Set the working directory in your user's home
-WORKDIR /home/${LDAP_USERNAME}
+# -----------------------
+# Switch to user
+# -----------------------
 USER ${LDAP_USERNAME}
+WORKDIR /home/${LDAP_USERNAME}
 
-RUN git clone https://github.com/EPFL-TOP/3d_segmentation.git
+# -----------------------
+# Clone your fixed GitHub repo
+# -----------------------
+RUN git clone https://github.com/feyzanar/docker.git deconvolution_repo
 
-RUN pip install cellpose
+# -----------------------
+# System dependencies
+# -----------------------
+USER root
+RUN apt update && apt install -y \
+    python3-pip \
+    git \
+    wget \
+    ocl-icd-opencl-dev \
+    libopencl1 \
+    clinfo \
+    && rm -rf /var/lib/apt/lists/*
+
+# -----------------------
+# Python dependencies
+# -----------------------
+USER ${LDAP_USERNAME}
+RUN pip install --upgrade pip
+RUN pip install \
+    numpy \
+    tifffile \
+    tqdm \
+    dask \
+    pyclesperanto-prototype \
+    clij2-fft
+
+# -----------------------
+# Set working directory to cloned repo
+# -----------------------
+WORKDIR /home/${LDAP_USERNAME}/deconvolution_repo/docker_deconvolution
+
+# -----------------------
+# Optional ENTRYPOINT (runs your fixed script by default)
+# -----------------------
+ENTRYPOINT ["python3", "3d_deconvolution.py"]
