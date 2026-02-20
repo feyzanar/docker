@@ -4,16 +4,22 @@
 FROM --platform=linux/amd64 ubuntu:22.04
 
 # -----------------------
-# RCP CaaS User Mapping
+# Optional RCP CaaS User Mapping
 # -----------------------
-ARG LDAP_USERNAME
-ARG LDAP_UID
-ARG LDAP_GROUPNAME
-ARG LDAP_GID
+# These build args are required on the cluster
+# Can be left empty for local Mac builds
+ARG LDAP_USERNAME=fnarslan
+ARG LDAP_UID=503
+ARG LDAP_GROUPNAME=staff
+ARG LDAP_GID=20
 
 USER root
-RUN groupadd ${LDAP_GROUPNAME} --gid ${LDAP_GID} \
-    && useradd -m -s /bin/bash -g ${LDAP_GROUPNAME} -u ${LDAP_UID} ${LDAP_USERNAME}
+
+# Only create user/group if build args are not empty
+RUN if [ -n "$LDAP_USERNAME" ] && [ -n "$LDAP_UID" ] && [ -n "$LDAP_GROUPNAME" ] && [ -n "$LDAP_GID" ]; then \
+        groupadd -f -g $LDAP_GID $LDAP_GROUPNAME && \
+        id -u $LDAP_USERNAME || useradd -m -s /bin/bash -g $LDAP_GROUPNAME -u $LDAP_UID $LDAP_USERNAME ; \
+    fi
 
 # -----------------------
 # System dependencies
@@ -30,10 +36,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------
-# Clone your GitHub repo
+# Clone GitHub repo
 # -----------------------
-USER ${LDAP_USERNAME}
-WORKDIR /home/${LDAP_USERNAME}
+USER $LDAP_USERNAME
+WORKDIR /home/$LDAP_USERNAME
 RUN git clone https://github.com/feyzanar/docker.git deconvolution_repo
 
 # -----------------------
@@ -49,9 +55,9 @@ RUN pip install \
     clij2-fft
 
 # -----------------------
-# Set working directory to repo
+# Set working directory to repo folder
 # -----------------------
-WORKDIR /home/${LDAP_USERNAME}/deconvolution_repo/docker_deconvolution
+WORKDIR /home/$LDAP_USERNAME/deconvolution_repo/docker_deconvolution
 
 # -----------------------
 # Default entrypoint
