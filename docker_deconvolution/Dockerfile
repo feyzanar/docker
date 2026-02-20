@@ -33,10 +33,10 @@ RUN apt-get update && apt-get install -y \
 # -----------------------
 # Clone repo into /scratch (writable on RCP)
 # -----------------------
-RUN mkdir -p /scratch/deconvolution_repo
-WORKDIR /scratch
-RUN git clone https://github.com/feyzanar/docker.git deconvolution_repo
-WORKDIR /scratch/deconvolution_repo/docker_deconvolution
+RUN mkdir -p /home/${LDAP_USERNAME}
+COPY ./ /home/${LDAP_USERNAME}
+RUN chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /home/${LDAP_USERNAME}
+WORKDIR /home/${LDAP_USERNAME}
 
 # -----------------------
 # Python packages
@@ -58,4 +58,4 @@ USER ${LDAP_USERNAME}
 # -----------------------
 # Default entrypoint
 # -----------------------
-ENTRYPOINT ["python3", "/scratch/deconvolution_repo/docker_deconvolution/3d_deconvolution.py"]
+# ENTRYPOINT ["python3", "/scratch/deconvolution_repo/docker_deconvolution/3d_deconvolution.py"]
