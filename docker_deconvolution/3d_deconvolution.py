@@ -6,9 +6,6 @@ import time
 import pyclesperanto_prototype as cle
 from clij2fft.richardson_lucy_dask import richardson_lucy_dask
 import gc
-import os
-import glob
-from pathlib import Path
 
 def main():
     # -----------------------
@@ -48,7 +45,7 @@ def main():
     # Deconvolution
     # -----------------------
     start_time = time.time()
-    print("Starting Richardson–Lucy deconvolution...")
+    print("Starting Richardson-Lucy deconvolution...")
 
     decon = richardson_lucy_dask(
         img,
@@ -62,10 +59,10 @@ def main():
     print(f"Deconvolution finished in {elapsed/60:.1f} minutes")
 
     # -----------------------
-    # Save result
+    # Save result as 16-bit
     # -----------------------
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    tiff.imwrite(output_path, decon.astype(np.float32))
+    tiff.imwrite(output_path, decon.astype(np.uint16))
     print(f"Saved deconvolved image to {output_path}")
 
     # -----------------------
@@ -73,8 +70,6 @@ def main():
     # -----------------------
     del img, decon
     gc.collect()
-    cle.clear()
-
     print("Done.")
 
 if __name__ == "__main__":
