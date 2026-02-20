@@ -34,15 +34,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------
-# Create home directory
+# Download script to /opt/scripts (safe from PVC mount)
 # -----------------------
-RUN mkdir -p /home/${LDAP_USERNAME}
-WORKDIR /home/${LDAP_USERNAME}
-
-# -----------------------
-# Download only the required script
-# -----------------------
-RUN wget https://raw.githubusercontent.com/feyzanar/docker/main/docker_deconvolution/3d_deconvolution.py
+RUN mkdir -p /opt/scripts
+RUN wget -O /opt/scripts/3d_deconvolution.py \
+    https://raw.githubusercontent.com/feyzanar/docker/main/docker_deconvolution/3d_deconvolution.py
+RUN chmod +x /opt/scripts/3d_deconvolution.py
 
 # -----------------------
 # Python packages
@@ -57,16 +54,13 @@ RUN pip install \
         clij2-fft
 
 # -----------------------
-# Fix ownership at the end
-# -----------------------
-RUN chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /home/${LDAP_USERNAME}
-
-# -----------------------
 # Switch to user
 # -----------------------
 USER ${LDAP_USERNAME}
 
+WORKDIR /home/${LDAP_USERNAME}
+
 # -----------------------
 # Default entrypoint
 # -----------------------
-# ENTRYPOINT ["python3", "/home/fnarslan/3d_deconvolution.py"]
+# ENTRYPOINT ["python3", "/opt/scripts/3d_deconvolution.py"]
