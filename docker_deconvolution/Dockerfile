@@ -1,7 +1,7 @@
 # -----------------------
-# Base Image
+# Base Image (NVIDIA for OpenCL/CUDA support)
 # -----------------------
-FROM --platform=linux/amd64 ubuntu:22.04
+FROM --platform=linux/amd64 nvidia/cuda:11.8.0-runtime-ubuntu22.04
 
 # -----------------------
 # RCP CaaS User Mapping
@@ -54,13 +54,13 @@ RUN pip install \
         clij2-fft
 
 # -----------------------
+# Fix ownership at the end
+# -----------------------
+RUN chown -R ${LDAP_USERNAME}:${LDAP_GROUPNAME} /opt/scripts
+
+# -----------------------
 # Switch to user
 # -----------------------
 USER ${LDAP_USERNAME}
 
 WORKDIR /home/${LDAP_USERNAME}
-
-# -----------------------
-# Default entrypoint
-# -----------------------
-# ENTRYPOINT ["python3", "/opt/scripts/3d_deconvolution.py"]
