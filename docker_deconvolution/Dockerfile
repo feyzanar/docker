@@ -20,6 +20,7 @@ RUN if [ -n "$LDAP_USERNAME" ] && [ -n "$LDAP_UID" ] && [ -n "$LDAP_GROUPNAME" ]
 # System dependencies
 # -----------------------
 RUN apt-get update && apt-get install -y \
+        pocl-opencl-icd \
         python3 \
         python3-pip \
         python3-dev \
