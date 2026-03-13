@@ -29,15 +29,16 @@ def main():
     parser.add_argument("--diameter", "-d", default = 15, help="diameter for the model", type=float)
     parser.add_argument("--anisotropy", "-a", default = 1.5, help="anisotropy", type=float)
     parser.add_argument("--minsize", "-m", default = -1, help="minimum size", type=float)
-    
     parser.add_argument("--channels", "-c", default = [0,0], help="channels for the model", type=int, nargs='+')
+    parser.add_argument("--denoise", "-n", default = "denoise_cyto3",
+                        choices=["denoise_cyto3", "denoise_nuclei"],
+                        help="denoise model type: 'denoise_cyto3' (default) or 'denoise_nuclei'", type=str)
     parser.add_argument("--test",  "-t", action="store_true",help="Run the first image as a test")
     parser.add_argument("--verbose",  "-v", action="store_true",help="Increase output verbosity")
     parser.add_argument("--dry-run",  action="store_true",help="do not run the command, just print it")
     
     args = parser.parse_args()
     channels=" ".join(str(x) for x in args.channels)
-
 
     nas_images = os.path.join(args.nas, "*.tif")
     if not os.path.exists(args.nas):
@@ -53,25 +54,10 @@ def main():
         safe_img_name = re.sub(r'[^a-z0-9]+', '-', img_base.lower()).strip('-')
         name = f"{args.name}-{safe_img_name}"
         print('sending image = ',img, '  with job name  ', name)
-        cmd='runai submit --name {} --image {} --gpu {} --existing-pvc claimname=upoates-scratch,path=/scratch --command -- /usr/bin/python3 /home/helsens/3d_segmentation/3d_cellpose_sam.py {} {} {} --diameter {} --channels {} --image "{}" --anisotropy {} --minsize {}'.format(name, args.image, args.gpu, args.input, args.output, args.model, args.diameter, channels, img, args.anisotropy, args.minsize)
+        cmd='runai submit --name {} --image {} --gpu {} --existing-pvc claimname=upoates-scratch,path=/scratch --command -- /usr/bin/python3 /opt/scripts/3d_cellpose.py {} {} {} --diameter {} --channels {} --image "{}" --anisotropy {} --minsize {} --denoise {}'.format(
+            name, args.image, args.gpu, args.input, args.output, args.model,
+            args.diameter, channels, img, args.anisotropy, args.minsize, args.denoise)
 
-        #cmd = (
-        #    'runai submit '
-        #    '--name {} '
-        #    '--image {} '
-        #    '--gpu {} '
-        #    '--existing-pvc claimname=upoates-scratch,path=/scratch '
-        #    '--command -- bash -c "'
-        #    'echo Copying model... && '
-        #    'mkdir -p /home/helsens/.cellpose/models/ &&'
-        #    'cp -R /scratch/data/cellpose/*  /home/helsens/.cellpose/models/ && '
-        #    '/usr/bin/python3 /home/helsens/3d_segmentation/3d_cellpose_sam.py {} {} {} '
-        #    '--diameter {} --channels {} --image \\"{}\\" --anisotropy {} --minsize {}"'
-        #).format(
-        #    name, args.image, args.gpu, args.input, args.output, args.model,
-        #    args.diameter, channels, img, args.anisotropy, args.minsize
-        #)
-        
         print(cmd)
         count+=1
         if args.dry_run==False:
@@ -80,14 +66,13 @@ def main():
             stdout=outputCMD["stdout"].split('\n')
 
             print('error:',stderr)
-            print('output'':',stdout)
+            print('output:',stdout)
 
 
     #runai submit
     #--name cellpose-test-2 
     #--image registry.rcp.epfl.ch/upoates-helsens/cellpose-env:v0.1 --gpu 1. 
     #--existing-pvc claimname=upoates-scratch,path=/scratch 
-    #--command -- /usr/bin/python3 /home/helsens/3d_segmentation/3d_cellpose.py /scratch/feyza/input/test2c /scratch/output/feyza /scratch/data/feyza/cellpose_training/2d/models/CP_20241007_h2bxncad -d 30 -c 2 1
-#/scratch/feyza/input/240925-pos4 /scratch/output/feyza /scratch/data/feyza/cellpose_training/2d/models/CP_20241007_h2bxncad
+    #--command -- /usr/bin/python3 /opt/scripts/3d_cellpose.py /scratch/feyza/input/test2c /scratch/output/feyza /scratch/data/feyza/cellpose_training/2d/models/CP_20241007_h2bxncad -d 30 -c 2 1
 
 main()
