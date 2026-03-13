@@ -68,11 +68,17 @@ def main():
             print('error:',stderr)
             print('output:',stdout)
 
-
-    #runai submit
-    #--name cellpose-test-2 
-    #--image registry.rcp.epfl.ch/upoates-helsens/cellpose-env:v0.1 --gpu 1. 
-    #--existing-pvc claimname=upoates-scratch,path=/scratch 
-    #--command -- /usr/bin/python3 /opt/scripts/3d_cellpose.py /scratch/feyza/input/test2c /scratch/output/feyza /scratch/data/feyza/cellpose_training/2d/models/CP_20241007_h2bxncad -d 30 -c 2 1
+'''
+e.g.
+python sendjobs.py --name cp-downs-ctrl \
+  --image registry.rcp.epfl.ch/upoates-fnarslan/cellpose:v0.2 \
+  --gpu 1. \
+  --nas /Volumes/upoates/common/ForRCP/input/fnarslan/reg_cropped_ctrl \
+  --input /scratch/data/input/fnarslan/reg_cropped_ctrl \
+  --output /scratch/data/output/fnarslan/reg_cropped_ctrl_cp \
+  --model /scratch/data/input/fnarslan/cellpose_training/2d/models/nuclei_h2b \
+  -d 6 -c 1 0 -a 1 \
+  -n denoise_nuclei
+'''
 
 main()
