@@ -24,6 +24,9 @@ def main():
     parser.add_argument("--minsize", "-m", default = -1., help="minimun size", type=float)
     parser.add_argument("--channels", "-c", default = [0,0], help="channels for the model", type=int, nargs='+')
     parser.add_argument("--image", "-i", default = "", help="input name of the image to match between NAS and Cluster", type=str)
+    parser.add_argument("--denoise", "-n", default = "denoise_cyto3",
+                        choices=["denoise_cyto3", "denoise_nuclei"],
+                        help="denoise model type: 'denoise_cyto3' (default) or 'denoise_nuclei'", type=str)
     parser.add_argument("--verbose", "-v",action="store_true",help="Increase output verbosity")
     
     args = parser.parse_args()
@@ -34,6 +37,7 @@ def main():
     
     print("Processing file  : ", args.input)
     print("Processing model : ", args.model)
+    print("Denoise model    : ", args.denoise)
 
     use_GPU = core.use_gpu()
     yn = ['NO', 'YES']
@@ -73,9 +77,9 @@ def main():
         
         # USE cellposeDenoiseModel FOR DENOISING THE IMAGE
         from cellpose import denoise
-        dn = denoise.DenoiseModel (model_type='denoise_cyto3', 
-                                   gpu=True,
-                                   chan2=False)
+        dn = denoise.DenoiseModel(model_type=args.denoise,
+                                  gpu=True,
+                                  chan2=False)
         img = dn.eval([img], channels=channels, diameter=diameter)
     
         # Perform segmentation
@@ -109,10 +113,14 @@ def main():
             save_flows=False,  # Save flows as TIFFs
             save_outlines=False,  # Save outlines as TIFFs
             save_mpl=False,  # Make matplotlib fig to view (WARNING: SLOW W/ LARGE IMAGES)
-        savedir=output_folder
+            savedir=output_folder
         )
-        os.chmod(args.output, 0o2775)
-        os.chmod(os.path.join(output_file_base,'.tif'), 0o664)
+
+        # Set permissions: read+write for owner, group, and others (no execute)
+        os.chmod(args.output, 0o0777)
+        output_tif = str(output_file_base) + '_cp_masks.tif'
+        if os.path.exists(output_tif):
+            os.chmod(output_tif, 0o0666)
 
 
 if __name__ == "__main__":
