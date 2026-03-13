@@ -32,10 +32,8 @@ RUN chmod +x /opt/scripts/3d_cellpose.py
 
 # Install Python dependencies
 RUN pip install --upgrade pip
-RUN pip install \
-        numpy \
-        tifffile \
-        torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+RUN pip install numpy tifffile
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 RUN pip install cellpose==3.1.0
 
 # Fix ownership
