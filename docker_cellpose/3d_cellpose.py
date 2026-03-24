@@ -23,7 +23,7 @@ def main():
     parser.add_argument("--anisotropy", "-a", default = 1.5, help="anisotropy", type=float)
     parser.add_argument("--minsize", "-m", default = -1., help="minimun size", type=float)
     parser.add_argument("--channels", "-c", default = [0,0], help="channels for the model", type=int, nargs='+')
-    parser.add_argument("--smooth", "-s", default = 0., help="smoothing parameter for the model (removes ring artifacts)", type=float)
+    parser.add_argument("--smooth", "-s", default = 0, help="smoothing parameter for the model (removes ring artifacts)", type=int)
     parser.add_argument("--image", "-i", default = "", help="input name of the image to match between NAS and Cluster", type=str)
     parser.add_argument("--denoise", "-n", default = "denoise_cyto3",
                         choices=["denoise_cyto3", "denoise_nuclei"],
