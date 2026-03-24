@@ -30,6 +30,7 @@ def main():
     parser.add_argument("--anisotropy", "-a", default = 1.5, help="anisotropy", type=float)
     parser.add_argument("--minsize", "-m", default = -1, help="minimum size", type=float)
     parser.add_argument("--channels", "-c", default = [0,0], help="channels for the model", type=int, nargs='+')
+    parser.add_argument("--smooth", "-s", default = 0., help="smoothing parameter for the model (removes ring artifacts)", type=float)
     parser.add_argument("--denoise", "-n", default = "denoise_cyto3",
                         choices=["denoise_cyto3", "denoise_nuclei"],
                         help="denoise model type: 'denoise_cyto3' (default) or 'denoise_nuclei'", type=str)
@@ -54,9 +55,9 @@ def main():
         safe_img_name = re.sub(r'[^a-z0-9]+', '-', img_base.lower()).strip('-')
         name = f"{args.name}-{safe_img_name}"
         print('sending image = ',img, '  with job name  ', name)
-        cmd='runai submit --name {} --image {} --gpu {} --existing-pvc claimname=upoates-scratch,path=/scratch --command -- /usr/bin/python3 /opt/scripts/3d_cellpose.py {} {} {} --diameter {} --channels {} --image "{}" --anisotropy {} --minsize {} --denoise {}'.format(
+        cmd='runai submit --name {} --image {} --gpu {} --existing-pvc claimname=upoates-scratch,path=/scratch --command -- /usr/bin/python3 /opt/scripts/3d_cellpose.py {} {} {} --diameter {} --channels {} --image "{}" --anisotropy {} --minsize {} --smooth {} --denoise {}'.format(
             name, args.image, args.gpu, args.input, args.output, args.model,
-            args.diameter, channels, img, args.anisotropy, args.minsize, args.denoise)
+            args.diameter, channels, img, args.anisotropy, args.minsize, args.smooth, args.denoise)
 
         print(cmd)
         count+=1
